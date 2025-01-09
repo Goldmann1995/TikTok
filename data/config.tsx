@@ -15,18 +15,16 @@ const siteConfig = {
   privacyUrl: '#',
   header: {
     links: [
-      // {
-      //   id: 'features',
-      //   label: 'Features',
-      // },
-      // {
-      //   id: 'pricing',
-      //   label: 'Pricing',
-      // },
-      // {
-      //   id: 'faq',
-      //   label: 'FAQ',
-      // },
+      {
+        label: '首页',
+        href: '/',
+        id: 'home'
+      },
+      {
+        label: '算命',
+        href: '/fortune',
+        id: 'fortune'
+      },
       {
         label: 'Login',
         href: '/login',

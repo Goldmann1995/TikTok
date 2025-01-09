@@ -43,9 +43,6 @@ export default function Home() {
               textAlign="center"
               maxW="md"
               px={4}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
             >
               基于八字命理的人生解析，为您提供事业、感情、财运等多维度分析。结果报告将以下一年的流月运势方式呈现。
             </Text>

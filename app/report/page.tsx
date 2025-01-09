@@ -39,6 +39,20 @@ export default function Report() {
   const [selectedTopic, setSelectedTopic] = useState('comprehensive')
   const [specialQuestion, setSpecialQuestion] = useState('')
 
+  const bgGradient = useColorModeValue(
+    'linear(to-br, pink.50, purple.50)',
+    'linear(to-br, purple.900, blue.900)'
+  )
+  const boxBg = useColorModeValue('whiteAlpha.900', 'whiteAlpha.100')
+  const borderColor = useColorModeValue('pink.100', 'whiteAlpha.200')
+  const tableBg = useColorModeValue('white', 'gray.800')
+  const tableHoverBg = useColorModeValue('pink.50', 'whiteAlpha.50')
+  const textColor = useColorModeValue('gray.600', 'gray.300')
+  const textareaBg = useColorModeValue('white', 'whiteAlpha.100')
+  const textareaBorderColor = useColorModeValue('pink.100', 'whiteAlpha.300')
+  const textareaBorderHoverColor = useColorModeValue('pink.200', 'whiteAlpha.400')
+  const textareaBorderFocusColor = useColorModeValue('pink.300', 'whiteAlpha.500')
+
   useEffect(() => {
     if (!userInfo.reportData) {
       router.push('/fortune')
@@ -164,13 +178,14 @@ export default function Report() {
       <Box 
         className="card" 
         mt={6}
-        bg={useColorModeValue('whiteAlpha.900', 'whiteAlpha.100')}
+        bg={boxBg}
         borderRadius="3xl"
         p={8}
         boxShadow="2xl"
         backdropFilter="blur(10px)"
         border="1px solid"
-        borderColor={useColorModeValue('pink.100', 'whiteAlpha.200')}
+        borderColor={borderColor}
+        w="full"
       >
         <FormControl>
           <FormLabel 
@@ -186,14 +201,14 @@ export default function Report() {
             placeholder="例如：我今年适合跳槽吗？我和现任的感情会稳定吗？..."
             size="md"
             minH="120px"
-            bg={useColorModeValue('white', 'whiteAlpha.100')}
-            borderColor={useColorModeValue('pink.100', 'whiteAlpha.300')}
+            bg={textareaBg}
+            borderColor={textareaBorderColor}
             _hover={{
-              borderColor: useColorModeValue('pink.200', 'whiteAlpha.400')
+              borderColor: textareaBorderHoverColor
             }}
             _focus={{
-              borderColor: useColorModeValue('pink.300', 'whiteAlpha.500'),
-              boxShadow: `0 0 0 1px ${useColorModeValue('pink.300', 'whiteAlpha.500')}`
+              borderColor: textareaBorderFocusColor,
+              boxShadow: `0 0 0 1px ${textareaBorderFocusColor}`
             }}
             resize="vertical"
           />
@@ -255,7 +270,7 @@ export default function Report() {
             useUserStore.setState({ analysisResult: result });
             router.push('/analysis');
             
-          } catch (error) {
+          } catch (error: any) {
             console.error('分析失败:', error);
             toast({
               title: '分析失败',

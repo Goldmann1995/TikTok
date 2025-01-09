@@ -96,9 +96,8 @@ export default function FortuneForm() {
       router.push('/report');
 
     } catch (error) {
-      console.error('执行八字分析失败:', error);
       // 这里可以添加错误提示，比如使用 toast
-      alert(error.message || '分析失败，请重试');
+      alert((error as Error).message || '分析失败，请重试');
     }
   }
 

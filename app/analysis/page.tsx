@@ -12,7 +12,9 @@ import {
 } from '@chakra-ui/react'
 import ReactMarkdown from 'react-markdown'
 import { FaFilePdf } from 'react-icons/fa'
-import html2pdf from 'html2pdf.js'
+import dynamic from 'next/dynamic'
+const html2pdf: any = dynamic(() => import('html2pdf.js'), { ssr: false });
+
 
 export default function Analysis() {
   const router = useRouter()
@@ -43,67 +45,79 @@ export default function Analysis() {
         }, 50) // 调整速度
   
         return () => clearTimeout(timer)
+      }else{
+        setIsTypingComplete(true)
       }
     } else {
       console.error("");
     }
 
-    // 检查是否打字完成
-    if (analysisText && currentIndex >= analysisText.length) {
-      setIsTypingComplete(true)
-    }
+
   }, [analysisResult, currentIndex, router])
 
   const bgGradient = useColorModeValue(
     'linear(to-br, pink.50, purple.50)',
     'linear(to-br, purple.900, blue.900)'
   )
+  const boxBg = useColorModeValue('whiteAlpha.900', 'whiteAlpha.100')
+  const bgText = useColorModeValue('gray.700', 'whiteAlpha.900')
+  const bgClipText = useColorModeValue('linear(to-r, pink.400, purple.400)', 'linear(to-r, purple.900, blue.900)')
+  const bgBorder = useColorModeValue('pink.100', 'whiteAlpha.200')
+  const bgTable = useColorModeValue('pink.50', 'whiteAlpha.50')
+  const bgButton = useColorModeValue('linear(to-r, purple.500, pink.500)', 'linear(to-r, purple.900, blue.900)')
+  const bgButtonHover = useColorModeValue('linear(to-r, purple.600, pink.600)', 'linear(to-r, purple.900, blue.900)')
+  const bgButtonActive = useColorModeValue('linear(to-r, purple.700, pink.700)', 'linear(to-r, purple.900, blue.900)')
+  const bgTextarea = useColorModeValue('white', 'whiteAlpha.100')
+  const bgTextareaBorder = useColorModeValue('purple.500', 'purple.300')
+  const bgTextareaBorderHover = useColorModeValue('pink.500', 'pink.300')
+  const bgTextareaBorderFocus = useColorModeValue('purple.400', 'purple.200')
 
   const handleSavePDF = () => {
-    const contentElement = document.querySelector('.css-1fpgkyz p')
-    if (!contentElement) {
-      console.error('未找到内容元素')
-      return
-    }
-
-    // 获取文本内容
-    const textContent = contentElement.textContent || ''
-    
-    // 创建一个格式化的临时容器
-    const tempContainer = document.createElement('div')
-    tempContainer.style.padding = '20px'
-    tempContainer.style.background = '#ffffff'
-    tempContainer.style.color = '#000000'
-    tempContainer.style.fontFamily = 'sans-serif'
-    tempContainer.innerHTML = `
-      <h1 style="text-align: center; margin-bottom: 20px; font-size: 24px; color: #000;">命理分析报告</h1>
-      <div style="white-space: pre-wrap; line-height: 1.6; font-size: 16px;">
-        ${textContent}
-      </div>
-    `
-
-    const options = {
-      margin: [10, 10],
-      filename: '命理分析报告.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait'
+      const contentElement = document.querySelector('.css-1fpgkyz p')
+      if (!contentElement) {
+        console.error('未找到内容元素')
+        return
       }
-    }
 
-    html2pdf()
-      .from(tempContainer)
-      .set(options)
-      .save()
-      .catch(err => {
-        console.error('PDF生成失败:', err)
-      });
+      // 获取文本内容
+      const textContent = contentElement.textContent || ''
+      
+      // 创建一个格式化的临时容器
+      const tempContainer = document.createElement('div')
+      tempContainer.style.padding = '20px'
+      tempContainer.style.background = bgTextarea
+      tempContainer.style.color = bgText
+      tempContainer.style.fontFamily = 'sans-serif'
+      tempContainer.innerHTML = `
+        <h1 style="text-align: center; margin-bottom: 20px; font-size: 24px; color: ${bgText};">命理分析报告</h1>
+        <div style="white-space: pre-wrap; line-height: 1.6; font-size: 16px;">
+          ${textContent}
+        </div>
+      `
+
+      const options = {
+        margin: [10, 10],
+        filename: '命理分析报告.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          backgroundColor: bgTextarea
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait'
+        }
+      }
+      if (typeof window !== 'undefined') {
+        html2pdf()
+        .from(tempContainer)
+        .set(options)
+        .save()
+        .catch(err => {
+          console.error('PDF生成失败:', err)
+        });
+      }
   }
 
   return (
@@ -136,7 +150,7 @@ export default function Analysis() {
           <Text
             fontSize="3xl"
             fontWeight="bold"
-            bgGradient="linear(to-r, pink.400, purple.400)"
+            bgGradient={bgClipText}
             bgClip="text"
             opacity="0"
             animation="fadeIn 2s ease-in forwards"
@@ -151,13 +165,13 @@ export default function Analysis() {
           </Text>
 
           <Box
-            bg={useColorModeValue('whiteAlpha.900', 'whiteAlpha.100')}
+            bg={boxBg}
             borderRadius="3xl"
             p={8}
             boxShadow="2xl"
             backdropFilter="blur(10px)"
             border="1px solid"
-            borderColor={useColorModeValue('pink.100', 'whiteAlpha.200')}
+            borderColor={bgBorder}
             w="full"
             minH="60vh"
             position="relative"
@@ -168,7 +182,7 @@ export default function Analysis() {
                 p: (props) => (
                   <Text
                     mb={4}
-                    color={useColorModeValue('gray.700', 'whiteAlpha.900')}
+                    color={bgText}
                     {...props}
                   />
                 ),
@@ -177,7 +191,7 @@ export default function Analysis() {
                     fontSize="2xl"
                     fontWeight="bold"
                     mb={4}
-                    bgGradient="linear(to-r, pink.400, purple.400)"
+                    bgGradient={bgClipText}
                     bgClip="text"
                     {...props}
                   />
@@ -187,7 +201,7 @@ export default function Analysis() {
                     fontSize="xl"
                     fontWeight="bold"
                     mb={3}
-                    color={useColorModeValue('purple.500', 'purple.300')}
+                    color={bgTextareaBorder}
                     {...props}
                   />
                 ),
@@ -196,7 +210,7 @@ export default function Analysis() {
                     fontSize="lg"
                     fontWeight="bold"
                     mb={2}
-                    color={useColorModeValue('pink.500', 'pink.300')}
+                    color={bgTextareaBorderHover}
                     {...props}
                   />
                 ),
@@ -205,27 +219,29 @@ export default function Analysis() {
                     fontSize="md"
                     fontWeight="bold"
                     mb={2}
-                    color={useColorModeValue('purple.400', 'purple.200')}
+                    color={bgTextareaBorderFocus}
                     {...props}
                   />
                 ),
                 ul: (props) => (
                   <Box as="ul" pl={4} mb={4} {...props} />
                 ),
-                li: (props) => (
-                  <Text
+                li: ({ children, ...props }) => (
+                  <Box
                     as="li"
                     mb={2}
-                    color={useColorModeValue('gray.700', 'whiteAlpha.900')}
+                    color={bgText}
                     {...props}
-                  />
+                  >
+                    <Text>{children}</Text>
+                  </Box>
                 ),
                 table: (props) => (
                   <Table 
                     variant="simple" 
                     my={4} 
                     borderWidth="1px"
-                    borderColor={useColorModeValue('pink.100', 'whiteAlpha.300')}
+                    borderColor={bgBorder}
                     borderRadius="lg"
                     overflow="hidden"
                     {...props}
@@ -233,7 +249,7 @@ export default function Analysis() {
                 ),
                 thead: (props) => (
                   <Thead 
-                    bg={useColorModeValue('pink.50', 'whiteAlpha.100')}
+                    bg={bgTable}
                     {...props}
                   />
                 ),
@@ -241,7 +257,7 @@ export default function Analysis() {
                 tr: (props) => (
                   <Tr 
                     _hover={{
-                      bg: useColorModeValue('pink.50', 'whiteAlpha.50')
+                      bg: bgTable
                     }}
                     {...props}
                   />
@@ -250,10 +266,10 @@ export default function Analysis() {
                   <Th 
                     py={3}
                     textAlign="center"
-                    color={useColorModeValue('gray.600', 'whiteAlpha.900')}
+                    color={bgText}
                     fontWeight="bold"
                     fontSize="sm"
-                    borderColor={useColorModeValue('pink.100', 'whiteAlpha.300')}
+                    borderColor={bgBorder}
                     {...props}
                   />
                 ),
@@ -261,8 +277,8 @@ export default function Analysis() {
                   <Td 
                     py={3}
                     textAlign="center"
-                    borderColor={useColorModeValue('pink.100', 'whiteAlpha.300')}
-                    color={useColorModeValue('gray.700', 'whiteAlpha.900')}
+                    borderColor={bgBorder}
+                    color={bgText}
                     fontSize="sm"
                     {...props}
                   />
@@ -286,14 +302,14 @@ export default function Analysis() {
           <Button
             leftIcon={<Icon as={FaFilePdf} />}
             size="lg"
-            bgGradient="linear(to-r, purple.500, pink.500)"
+            bgGradient={bgButton}
             color="white"
             _hover={{
-              bgGradient: "linear(to-r, purple.600, pink.600)",
+              bgGradient: bgButtonHover,
               transform: "scale(1.05)"
             }}
             _active={{
-              bgGradient: "linear(to-r, purple.700, pink.700)",
+              bgGradient: bgButtonActive,
             }}
             boxShadow="lg"
             onClick={handleSavePDF}

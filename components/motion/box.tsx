@@ -9,5 +9,4 @@ export interface MotionBoxProps
   children?: React.ReactNode
 }
 
-/* @ts-expect-error */
 export const MotionBox = motion.create(chakra.div)
