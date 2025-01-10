@@ -14,7 +14,7 @@ from common import *
 from yue import months
 from gradio_client import Client
 import re
-
+import random
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -50,10 +50,15 @@ def analyze_bazi():
         solar = Solar.fromYmdHms(int(year), int(month), int(day), int(hour), 0, 0)
         lunar = solar.getLunar()
         
+        # 获取今日的农历日期
+        today = datetime.datetime.now()
+        today_solar = Solar.fromYmdHms(today.year, today.month, today.day, today.hour, 0, 0)
+        today_lunar = today_solar.getLunar()
+        today_cnlunar = cnlunar.Lunar(today, godType='8char')
         # 获取八字
         day = lunar
         ba = lunar.getEightChar()
-        
+        today_ba = today_lunar.getEightChar()
         # 获取干支
         gans = collections.namedtuple("Gans", "year month day time")(
             year=ba.getYearGan(), 
@@ -69,6 +74,18 @@ def analyze_bazi():
             time=ba.getTimeZhi()
         )
 
+        today_gans = collections.namedtuple("Gans", "year month day time")(
+            year=today_ba.getYearGan(), 
+            month=today_ba.getMonthGan(),
+            day=today_ba.getDayGan(),
+            time=today_ba.getTimeGan()
+        )
+        today_zhis = collections.namedtuple("Zhis", "year month day time")(
+            year=today_ba.getYearZhi(),
+            month=today_ba.getMonthZhi(),
+            day=today_ba.getDayZhi(),
+            time=today_ba.getTimeZhi()
+        )
         # 获取运势信息
         me = gans.day
         month = zhis.month
@@ -97,6 +114,31 @@ def analyze_bazi():
         for item in list(zhis) + [zhis.month]:  
             for gan in zhi5[item]:
                 scores[gan5[gan]] += zhi5[item][gan]
+
+        total_score = sum(scores.values())
+        for key in scores:
+            scores[key] /= total_score
+
+        today_scores = {"金":0, "木":0, "水":0, "火":0, "土":0}
+        # 计算今日的五行分数
+        for item in today_gans:  
+            today_scores[gan5[item]] += 5
+
+        for item in list(today_zhis) + [today_zhis.month]:  
+            for gan in zhi5[item]:
+                today_scores[gan5[gan]] += zhi5[item][gan]
+
+        # 归一化五行分数
+        total_score = sum(today_scores.values())
+        for key in today_scores:
+            today_scores[key] /= total_score
+
+        scores = {k: (today_scores.get(k, 0) + scores.get(k, 0)) * 100 for k in set(today_scores) | set(scores)}
+
+        new_relations = {}
+        for key in scores.keys():
+            relation_name = wu_xing_relations[ten_deities[me].inverse[key]]  # 获取关系名称
+            new_relations[relation_name] = int(scores[key])  # 使用关系名称作为新的key
 
         # 计算大运
         seq = Gan.index(gans.year)
@@ -152,6 +194,42 @@ def analyze_bazi():
         for zhi in Zhi:
             shens[zhi] = ten_deities[me][max(zhi5[zhi], key=zhi5[zhi].get)]
         
+        # 获取今日的幸运颜色、幸运数字和幸运方向
+        today_direction = today_cnlunar.get_luckyGodsDirection()
+        if bazi_strength == "强":
+            bazi_strength = "身强"
+            today_direction = [item for item in today_direction if "阳贵" not in item]
+        else:
+            today_direction = [item for item in today_direction if "阴贵" not in item]
+        
+        direction_dict = {}
+        for item in today_direction:
+            if '神' in item:
+                god = item[:2]  # 取前两个字符（如"喜神"）
+                direction = item[2:]  # 取剩余部分作为方向
+            else:  # 处理"阳贵"和"阴贵"的情况
+                god = item[:2]  # 取前两个字符（如"阳贵"）
+                direction = item[2:]  # 取剩余部分作为方向
+            direction_dict[god] = direction
+        keys_to_update = [key for key in direction_dict.keys() if "阳贵" in key or "阴贵" in key]
+        for key in keys_to_update:
+            if "阳贵" in key:
+                direction_dict[key.replace("阳贵", "贵人")] = direction_dict.pop(key)
+            elif "阴贵" in key:
+                direction_dict[key.replace("阴贵", "贵人")] = direction_dict.pop(key)
+
+        today_direction = direction_dict
+        today_good = random.sample(today_cnlunar.goodThing, min(3, len(today_cnlunar.goodThing)))
+        today_bad = random.sample(today_cnlunar.badThing, min(3, len(today_cnlunar.badThing)))
+        
+        # 读取颜色数据
+        with open('../public/colors.json', 'r', encoding='utf-8') as f:
+            colors_data = json.load(f)
+
+        # 获取幸运色和幸运数字
+        lucky_color = get_lucky_color(colors_data, scores)
+        lucky_numbers = get_lucky_numbers(gans, zhis, today_gans, today_zhis)
+        
         # 构建返回结果
         result = {
             "success": True,
@@ -174,22 +252,30 @@ def analyze_bazi():
                     "year": {
                         "gan": gans.year,
                         "zhi": zhis.year,
-                        "shen": gan_shens[0]
+                        "shen": gan_shens[0],
+                        "canggan": zhi5[zhis.year],
+                        "zhi_shens": zhi_shens[0]
                     },
                     "month": {
                         "gan": gans.month,
                         "zhi": zhis.month,
-                        "shen": gan_shens[1]
+                        "shen": gan_shens[1],
+                        "canggan": zhi5[zhis.month],
+                        "zhi_shens": zhi_shens[1]
                     },
                     "day": {
                         "gan": gans.day,
                         "zhi": zhis.day,
-                        "shen": gan_shens[2]
+                        "shen": "元女" if is_female else "元男",
+                        "canggan": zhi5[zhis.day],
+                        "zhi_shens": zhi_shens[2]
                     },
                     "time": {
                         "gan": gans.time,
                         "zhi": zhis.time,
-                        "shen": gan_shens[3]
+                        "shen": gan_shens[3],
+                        "canggan": zhi5[zhis.time],
+                        "zhi_shens": zhi_shens[3]
                     }
                 },
                 "analysis": {
@@ -197,6 +283,18 @@ def analyze_bazi():
                     "dayuns": dayuns,
                     "起运时间": yun.getStartSolar().toFullString(),
                     "十神": shens
+                },
+                "daily_fortune": {
+                    "scores": new_relations,
+                    "lucky": {
+                        "color": lucky_color,
+                        "numbers": lucky_numbers,
+                        "direction": today_direction
+                    },
+                    "activities": {
+                        "good": today_good,
+                        "bad": today_bad
+                    }
                 }
             }
         }
@@ -282,7 +380,7 @@ def generate_report():
         
         prompts = data.get('prompts')
         specialQuestion = data.get('specialQuestion')
-        
+        topic = data.get('topic')
         # 准备提示词
         current = datetime.datetime.now()
         solar = Solar.fromYmdHms(int(current.year), int(current.month), int(current.day), int(current.hour), 0, 0)
@@ -314,29 +412,57 @@ def generate_report():
         month_gan_zhi_nian = list(dict.fromkeys(month_gan_zhi_nian))
         month_gan_zhi_nian = {f"{nian+1}年流月": list(dict.fromkeys(month_gan_zhi_nian))}
         #明年
-        month_gan_zhi_nian1 = get_month_gan_zhi(next_lichun_date, after_next_lichun_date)
-        month_gan_zhi_nian1 = list(dict.fromkeys(month_gan_zhi_nian1))
-        month_gan_zhi_nian1 = {f"{nian+2}年流月": list(dict.fromkeys(month_gan_zhi_nian1))}
+        # month_gan_zhi_nian1 = get_month_gan_zhi(next_lichun_date, after_next_lichun_date)
+        # month_gan_zhi_nian1 = list(dict.fromkeys(month_gan_zhi_nian1))
+        # month_gan_zhi_nian1 = {f"{nian+2}年流月": list(dict.fromkeys(month_gan_zhi_nian1))}
         # 获取本年立春日期
-        system_prompt = f"""
-        你是一个专业的命理分析师，请根据以下用户信息生成详细的命理分析报告：
-        1.开头需要简要阐述用户信息，姓名，八字，性别，命局特点都可以在query中解析获取。
-        2.今年和明年流月信息如下：
-        {month_gan_zhi_nian}
-        {month_gan_zhi_nian1}
-        3.当前时间是{current}，农历日期是{lunar}，请基于天干地支分析今年和明年的命理趋势。请先提供今年的分析，再分析明年的命理情况。
+        if topic == 'profession':
+            system_prompt = f"""
+            你是一个专业的命理分析师，请根据以下用户信息生成详细的命理分析报告：
+            1.开头需要简要阐述用户信息，姓名，八字，性别，命局特点都可以在query中解析获取。
+            2.针对命局特点，喜用神，忌用神，进行简略讲解，并给出建议。
+            3.今年和明年流月信息如下：
+            {month_gan_zhi_nian}
+            4.当前时间是{current}，农历日期是{lunar}，请基于天干地支分析今年和明年的命理趋势。请先提供今年的分析，再分析明年的命理情况。
 
-        请根据今年的流月{month_gan_zhi_nian}来进行详细分析。你可以参考类似的格式进行呈现：
-        月份+节气+注意事项
-        你可以把注意事项写的更加具体一些。
-        你将使用我提供的数据中的八字十神信息，并结合天干地支来进行命理分析。请注意以下几点：
-        1. 第一部分数据包含客户信息，第二部分数据是参考的十神分析字典。请结合字典中的内容进行分析，但不要简单照抄。
-        2. 增加你对每项分析的个人理解和见解，不要重复原文中的内容。
-        3. 请确保你的回答用中文表达，且富有专业性和易于理解。
-        4. 总结内容中包括以下内容{prompts}
-        同时，请参考以下特殊问题（如果有）来进一步分析命理情况：{specialQuestion}
-        """
-
+            请根据今年的流月{month_gan_zhi_nian}来进行详细分析。你可以参考类似的格式进行呈现：
+            月份+节气+注意事项
+            你可以把注意事项写的更加具体一些。
+            你将使用我提供的数据中的八字十神信息，并结合天干地支来进行命理分析。请注意以下几点：
+            1. 第一部分数据包含客户信息，第二部分数据是参考的十神分析字典。请结合字典中的内容进行分析，但不要简单照抄。
+            2. 增加你对每项分析的个人理解和见解，不要重复原文中的内容。
+            3. 请确保你的回答用中文表达，且富有专业性和易于理解。            
+            4.特殊问题的回答应该在基本信息下面
+            5.文档最下方不要出现“希望这份命理分析报告对您有所帮助，祝您生活幸福、事业顺利！”
+            6.文档最后应该写“当前内容仅供娱乐中探索，不等于专业测评，不代表价值评判，无任何现实教导意义。若有需求，请点击右下角contact。”
+            """
+        else:
+            system_prompt = f"""
+            你是一个专业的命理分析师，请根据以下用户信息生成详细的命理分析报告：
+            1.开头需要简要阐述用户信息，姓名，八字，性别，命局特点都可以在query中解析获取。
+            2.针对命局特点，喜用神，忌用神，进行简略讲解，并给出建议。
+        
+            你将使用我提供的数据中的八字十神信息，并结合天干地支来进行命理分析。请注意以下几点：
+            1. 第一部分数据包含客户信息，第二部分数据是参考的十神分析字典。请结合字典中的内容进行分析，但不要简单照抄。
+            2. 增加你对{topic}分析的个人理解和见解，不要重复原文中的内容。
+            3. 请确保你的回答用中文表达，且富有专业性,但是易于没有命理知识的人的理解。
+            4.特殊问题的回答应该在基本信息下面
+            5. 总结内容中包括以下内容{prompts}
+            6.文档最下方不要出现“希望这份命理分析报告对您有所帮助，祝您生活幸福、事业顺利！”
+            7.文档最后应该写“当前内容仅供娱乐中探索，不等于专业测评，不代表价值评判，无任何现实教导意义。若有需求，请点击右下角contact。”
+            """
+        
+        if specialQuestion:
+            system_prompt = f"""
+            你是一个专业的命理分析师，请根据以下用户信息生成详细的命理分析报告,
+            你将使用我提供的数据中的八字十神信息，并结合天干地支来进行命理分析。请注意以下几点：
+            1.开头需要简要阐述用户信息，姓名，八字，性别，命局特点都可以在query中解析获取。
+            2.针对命局特点，喜用神，忌用神，进行简略讲解，并给出建议。
+            3.特殊问题的回答应该在基本信息下面
+            4.文档最下方不要出现“希望这份命理分析报告对您有所帮助，祝您生活幸福、事业顺利！”
+            5.文档最后应该写“当前内容仅供娱乐中探索，不等于专业测评，不代表价值评判，无任何现实教导意义。若有需求，请点击右下角contact。”
+            同时，请参考以下特殊问题（如果有）来进一步结合当天的天干地支分析命理情况详细分析，当前时间是{current}，农历日期是{lunar}：{specialQuestion}
+            """
         
         # 调用模型生成报告
         report_sections = client.predict(
@@ -361,6 +487,8 @@ def generate_report():
             "success": False,
             "error": str(e)
         }), 500
+
+
 
 
 

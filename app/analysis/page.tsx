@@ -24,35 +24,32 @@ export default function Analysis() {
   const [isTypingComplete, setIsTypingComplete] = useState(false)
 
   useEffect(() => {
-    if (!analysisResult) {
+    // 如果 analysisResult 不存在，尝试从 localStorage 获取
+    const savedResult = !analysisResult ? localStorage.getItem('analysisResult') : null
+    if (!analysisResult && !savedResult) {
       router.push('/report')
       return
     }
 
-    const sections = analysisResult?.data?.sections;
-
+    const resultToUse = analysisResult || (savedResult ? JSON.parse(savedResult) : null)
+    const sections = resultToUse?.data?.sections
 
     // 确保 `sections` 存在且是数组
     if (Array.isArray(sections) && sections[1]?.[0]?.[1]) {
-      const analysisText = sections[1][0][1]; // 获取正确的文本
+      const analysisText = sections[1][0][1]
       
-      // 模拟打字机效果
-      if (currentIndex < analysisText.length) {
-        // 模拟打字逻辑
-        const timer = setTimeout(() => {
-          setDisplayText(prev => prev + analysisText[currentIndex])
-          setCurrentIndex(prev => prev + 1)
-        }, 50) // 调整速度
-  
-        return () => clearTimeout(timer)
-      }else{
+      if (analysisText) {
+        setDisplayText(analysisText)
+        // 保存结果到 localStorage
+        if (analysisResult) {
+          localStorage.setItem('analysisResult', JSON.stringify(analysisResult))
+        }
+      } else {
         setIsTypingComplete(true)
       }
     } else {
-      console.error("");
+      console.error("解析结果格式错误")
     }
-
-
   }, [analysisResult, currentIndex, router])
 
   const bgGradient = useColorModeValue(
@@ -61,7 +58,10 @@ export default function Analysis() {
   )
   const boxBg = useColorModeValue('whiteAlpha.900', 'whiteAlpha.100')
   const bgText = useColorModeValue('gray.700', 'whiteAlpha.900')
-  const bgClipText = useColorModeValue('linear(to-r, pink.400, purple.400)', 'linear(to-r, purple.900, blue.900)')
+  const bgClipText = useColorModeValue(
+    'linear(to-r, purple.600, pink.600)',
+    'linear(to-r, purple.200, blue.200)'
+  )
   const bgBorder = useColorModeValue('pink.100', 'whiteAlpha.200')
   const bgTable = useColorModeValue('pink.50', 'whiteAlpha.50')
   const bgButton = useColorModeValue('linear(to-r, purple.500, pink.500)', 'linear(to-r, purple.900, blue.900)')

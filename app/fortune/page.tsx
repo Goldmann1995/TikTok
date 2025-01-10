@@ -28,12 +28,27 @@ export default function FortuneForm() {
   // 获取今天的日期
   const today = new Date().toISOString().split('T')[0]
   
-  const [formData, setFormData] = useState({
-    name: '',
-    gender: 'female',
-    birthDate: today,
-    birthTime: '2'
+  const [formData, setFormData] = useState(() => {
+    // 如果在客户端，尝试从 localStorage 获取保存的数据
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('userFormData')
+      if (savedData) {
+        return JSON.parse(savedData)
+      }
+    }
+    // 默认值
+    return {
+      name: '',
+      gender: 'female',
+      birthDate: today,
+      birthTime: '2'
+    }
   })
+
+  // 添加保存数据的副作用
+  useEffect(() => {
+    localStorage.setItem('userFormData', JSON.stringify(formData))
+  }, [formData])
 
   const handleSubmit = async () => {
     // 从时辰文本中提取小时的映射
@@ -89,7 +104,8 @@ export default function FortuneForm() {
         gender: formData.gender === 'male' ? 1 : 0,
         lunarBirthDate: result.data.basic.lunar_date,
         age: result.data.basic.current_age,
-        reportData: result.data
+        reportData: result.data,
+        dailyFortune: result.data.daily_fortune
       });
 
       // 导航到报告页面
@@ -142,6 +158,66 @@ export default function FortuneForm() {
               type="date"
               value={formData.birthDate}
               onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+              sx={{
+                // 基础样式
+                width: '100%',
+                height: '40px',
+                padding: '0 12px',
+                
+                // 日期选择器图标
+                '::-webkit-calendar-picker-indicator': {
+                  backgroundColor: 'transparent',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  opacity: 0.8,
+                  _hover: {
+                    opacity: 1
+                  }
+                },
+                
+                // 日期编辑区域
+                '::-webkit-datetime-edit': {
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 4px',
+                },
+                
+                // 年月日字段容器
+                '::-webkit-datetime-edit-fields-wrapper': {
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+                
+                // 年月日之间的分隔符
+                '::-webkit-datetime-edit-text': { 
+                  color: 'inherit',
+                  padding: '0 2px',
+                  opacity: 0.7,
+                },
+                
+                // 年月日字段
+                '::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field': {
+                  padding: '0 2px',
+                  color: 'inherit',
+                },
+                
+                // Firefox 特定样式
+                '@supports (-moz-appearance: none)': {
+                  appearance: 'textfield',
+                  '&::-webkit-datetime-edit': {
+                    display: 'block',
+                  },
+                },
+                
+                // Edge/IE 特定样式
+                '@supports (-ms-ime-align: auto)': {
+                  '&::-webkit-datetime-edit': {
+                    display: 'block',
+                  },
+                },
+              }}
             />
           </FormField>
 

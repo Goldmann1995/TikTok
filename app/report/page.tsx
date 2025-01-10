@@ -3,10 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUserStore } from '@/app/store/userStore'
-import { Container, VStack, Box, Text, Grid, Button, Flex, Icon, Spinner, useToast, Radio, RadioGroup, Stack,Textarea, FormControl, FormLabel, useColorModeValue  } from '@chakra-ui/react'
+import { Container, VStack, Box, Text, Grid, Button, Flex,
+ Icon, Spinner, useToast, Radio, RadioGroup, Stack, Textarea,
+  FormControl, FormLabel, useColorModeValue, CircularProgress, CircularProgressLabel, Progress } from '@chakra-ui/react'
 import { FaBirthdayCake, FaClock, FaMoon, FaUser } from 'react-icons/fa'
-import './styles.css' // 引入 CSS 文件
+import './styles.css'
 
+// 五行颜色映射
 const wuxingColors = {
   金: 'wuxing-gold',
   木: 'wuxing-wood',
@@ -15,6 +18,7 @@ const wuxingColors = {
   土: 'wuxing-earth',
 }
 
+// 天干五行对应
 const ganWuxing = {
   甲: '木', 乙: '木',
   丙: '火', 丁: '火',
@@ -23,6 +27,7 @@ const ganWuxing = {
   壬: '水', 癸: '水',
 }
 
+// 地支五行对应
 const zhiWuxing = {
   寅: '木', 卯: '木',
   巳: '火', 午: '火',
@@ -31,14 +36,48 @@ const zhiWuxing = {
   子: '水', 亥: '水',
 }
 
+// 定义运势数据接口类型
+interface DailyFortune {
+  scores: {
+    love: number;
+    wealth: number;
+    career: number;
+    study: number;
+    health: number;
+  };
+  lucky: {
+    color: {
+      name: string;
+      hex: string;
+    };
+    numbers: string;
+    direction: {
+      喜神: string;
+      财神: string;
+      福神: string;
+      贵人: string;
+    };
+  };
+  activities: {
+    good: string[];
+    bad: string[];
+  };
+}
+
+// 在组件顶部添加接口定义
+interface TimeoutData {
+  timerId: NodeJS.Timeout;
+  toastId?: string | number;
+}
+
 export default function Report() {
   const router = useRouter()
   const userInfo = useUserStore(state => state)
   const [isLoading, setIsLoading] = useState(false)
   const toast = useToast()
-  const [selectedTopic, setSelectedTopic] = useState('comprehensive')
-  const [specialQuestion, setSpecialQuestion] = useState('')
-
+  const [selectedTopic, setSelectedTopic] = useState(useUserStore.getState().selectedTopic || 'comprehensive')
+  const [specialQuestion, setSpecialQuestion] = useState(useUserStore.getState().specialQuestion || '')
+  const [dailyFortune, setDailyFortune] = useState<DailyFortune>(userInfo.dailyFortune);
   const bgGradient = useColorModeValue(
     'linear(to-br, pink.50, purple.50)',
     'linear(to-br, purple.900, blue.900)'
@@ -52,12 +91,28 @@ export default function Report() {
   const textareaBorderColor = useColorModeValue('pink.100', 'whiteAlpha.300')
   const textareaBorderHoverColor = useColorModeValue('pink.200', 'whiteAlpha.400')
   const textareaBorderFocusColor = useColorModeValue('pink.300', 'whiteAlpha.500')
+  const [progress, setProgress] = useState(0)
+  const [loadingStatus, setLoadingStatus] = useState('')
+  const [timeoutId, setTimeoutId] = useState<TimeoutData | null>(null)
 
   useEffect(() => {
     if (!userInfo.reportData) {
       router.push('/fortune')
     }
-  }, [userInfo, router])
+
+    // 组件卸载时的清理函数
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId.timerId)
+        if (timeoutId.toastId) {
+          toast.close(timeoutId.toastId)
+        }
+      }
+      setIsLoading(false)
+      setProgress(0)
+      setLoadingStatus('')
+    }
+  }, [userInfo, router, timeoutId, toast])
 
   if (!userInfo.reportData) {
     return null
@@ -82,55 +137,576 @@ export default function Report() {
       isCurrent: false,
     }
   })
+  console.log(userInfo)
+
+  const simulateProgress = () => {
+    setProgress(0)
+    let currentProgress = 0
+    
+    const interval = setInterval(() => {
+      currentProgress += Math.random() * 15
+      if (currentProgress > 90) {
+        currentProgress = 90
+        clearInterval(interval)
+      }
+      setProgress(Math.min(currentProgress, 90))
+    }, 1000)
+
+    return interval
+  }
+
+  const updateLoadingStatus = () => {
+    const statusMessages = [
+      '正在收集命盘信息...',
+      '正在解析五行关系...',
+      '正在计算运势指数...',
+      '正在生成详细报告...'
+    ]
+    
+    let index = 0
+    const interval = setInterval(() => {
+      setLoadingStatus(statusMessages[index])
+      index = (index + 1) % statusMessages.length
+    }, 3000)
+
+    return interval
+  }
+
+  const handleAnalysis = async () => {
+    try {
+      setIsLoading(true)
+      
+      // 在发送请求前保存用户选择的内容到 store
+      useUserStore.setState({ 
+        selectedTopic,
+        specialQuestion
+      })
+      
+      const progressInterval = simulateProgress()
+      const statusInterval = updateLoadingStatus()
+      
+      const timeout = setTimeout(() => {
+        const toastId = toast({
+          title: '命理解析进行中',
+          description: '系统正在进行深度分析，请稍候...',
+          status: 'info',
+          duration: null,
+          isClosable: true,
+          position: 'top',
+          variant: 'solid',
+          containerStyle: {
+            maxWidth: '400px'
+          },
+          render: ({ onClose }) => (
+            <Box
+              color="white"
+              p={4}
+              bg="rgba(0, 0, 0, 0.8)"
+              backdropFilter="blur(10px)"
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="whiteAlpha.200"
+            >
+              <Flex align="center" gap={3}>
+                <Spinner
+                  thickness="3px"
+                  speed="0.65s"
+                  color="pink.300"
+                  size="md"
+                />
+                <VStack align="start" spacing={0}>
+                  <Text fontWeight="bold">命理解析进行中</Text>
+                  <Text fontSize="sm" color="whiteAlpha.800">
+                    系统正在进行深度分析，请稍候...
+                  </Text>
+                </VStack>
+              </Flex>
+            </Box>
+          )
+        })
+        setTimeoutId({ timerId: timeout, toastId })
+      }, 15000)
+
+      const requestData = {
+        reportData: userInfo.reportData,
+        topic: selectedTopic,
+        prompts: {
+          comprehensive: "请根据八字命盘进行综合运势分析，包括性格特征、事业发展、财运、感情等各个方面。",
+          career: "请重点分析八字命盘中关于事业发展的信息，包括职业方向、发展机遇、注意事项等。",
+          wealth: "请详细分析八字命盘中的财运信息，包括财运走势、理财建议、投资机会等。",
+          relationship: "请重点解析八字命盘中的感情姻缘信息，包括感情运势、桃花运、婚姻建议等。",
+          health: "请根据八字命盘分析健康状况，包括需要注意的健康问题、养生建议等。",
+          profession: "请根据八字命盘分析职业发展，包括职业方向、发展机遇、注意事项等。"
+        }[selectedTopic],
+        specialQuestion: specialQuestion.trim()
+      }
+      
+      const response = await fetch('/api/generate_report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('分析请求失败');
+      }
+      
+      const result = await response.json();
+      useUserStore.setState({ analysisResult: result });
+      
+      clearInterval(progressInterval)
+      clearInterval(statusInterval)
+      if (timeoutId) {
+        clearTimeout(timeoutId.timerId)
+        if (timeoutId.toastId) {
+          toast.close(timeoutId.toastId)
+        }
+      }
+      
+      setProgress(100)
+      router.push('/analysis');
+      
+    } catch (error: any) {
+      console.error('分析失败:', error);
+      toast({
+        title: '分析失败',
+        description: error.message || '请稍后重试',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    } finally {
+      if (timeoutId?.toastId) {
+        toast.close(timeoutId.toastId)
+      }
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Container maxW="container.md" py={20} className="report-container">
       <Box className="card">
-        <Flex justify="space-between" align="center" className="card-info">
-          <Text className="card-title">{userInfo.reportData.basic.name}的基础信息</Text>
-          <Box className="card-badge">
-            <Text>
+        <Flex justify="space-between" align="center" mb={4}>
+          <Text className="card-title" fontSize="xl">基础信息</Text>
+          <Box px={3} py={1} borderRadius="full" bg="pink.100" color="pink.500">
+            <Text fontSize="sm">
               {userInfo.reportData.basic.gender === '男' ? '乾造' : '坤造'}
             </Text>
           </Box>
         </Flex>
 
-        <Grid className="grid">
+        <Grid templateColumns="repeat(4, 1fr)" gap={3}>
           {[
             { label: '阳历', value: userInfo.reportData.basic.solar_date, icon: FaBirthdayCake },
             { label: '时辰', value: userInfo.reportData.basic.birth_time, icon: FaClock },
             { label: '农历', value: userInfo.reportData.basic.lunar_date, icon: FaMoon },
             { label: '年龄', value: `${userInfo.reportData.basic.current_age}岁`, icon: FaUser },
           ].map((item, index) => (
-            <Box key={index} className="grid-item">
-              <Icon as={item.icon} className="icon" />
-              <Box>
-                <Text>{item.label}</Text>
-                <Text>{item.value}</Text>
-              </Box>
-            </Box>
+            <Flex key={index} align="center" gap={2} p={2}>
+              <Icon as={item.icon} color="pink.400" />
+              <VStack align="start" spacing={0}>
+                <Text fontSize="xs" color="gray.500">{item.label}</Text>
+                <Text fontSize="sm">{item.value}</Text>
+              </VStack>
+            </Flex>
           ))}
         </Grid>
       </Box>
 
       <Box className="card">
         <Text className="card-title">八字命盘</Text>
-        <Grid templateColumns="repeat(4, 1fr)" gap={6}>
-          {['年柱', '月柱', '日柱', '时柱'].map((pillar, index) => {
-            const pillarData = baziData[index]
+        <Grid templateColumns="auto repeat(4, 1fr)" gap={4}>
+          {/* 表头行 */}
+          <Box></Box>
+          {['年柱', '月柱', '日柱', '时柱'].map((pillar, index) => (
+            <Text 
+              key={index} 
+              textAlign="center" 
+              fontWeight="bold" 
+              fontSize="2xl"
+            >
+              {pillar}
+            </Text>
+          ))}
+
+          {/* 干神行 */}
+          <Text pl={2} fontWeight="bold" fontSize="2xl">干神</Text>
+          {['year', 'month', 'day', 'time'].map((pillar) => {
+            const gan = userInfo.reportData.bazi[pillar].gan;
             return (
-              <VStack key={index}>
-                <Text>{pillar}</Text>
-                {[pillarData.gan, pillarData.zhi].map((item, i) => (
-                  <Box key={i} className={`circle ${wuxingColors[ganWuxing[item] || zhiWuxing[item]]}`}>
-                    {item}
-                  </Box>
-                ))}
-              </VStack>
-            )
+              <Text 
+                key={pillar} 
+                textAlign="center" 
+                fontSize="xl"
+                className={wuxingColors[ganWuxing[gan]]}
+              >
+                {userInfo.reportData.bazi[pillar].shen}
+              </Text>
+            );
           })}
+
+          {/* 天干行 */}
+          <Text pl={2} fontWeight="bold" fontSize="2xl">天干</Text>
+          {['year', 'month', 'day', 'time'].map((pillar) => {
+            const gan = userInfo.reportData.bazi[pillar].gan;
+            return (
+              <Text 
+                key={pillar} 
+                textAlign="center" 
+                fontSize="xl"
+                className={wuxingColors[ganWuxing[gan]]}
+              >
+                {gan}
+              </Text>
+            );
+          })}
+
+          {/* 地支行 */}
+          <Text pl={2} fontWeight="bold" fontSize="2xl">地支</Text>
+          {['year', 'month', 'day', 'time'].map((pillar) => {
+            const zhi = userInfo.reportData.bazi[pillar].zhi;
+            return (
+              <Text 
+                key={pillar} 
+                textAlign="center" 
+                fontSize="xl"
+                className={wuxingColors[zhiWuxing[zhi]]}
+              >
+                {zhi}
+              </Text>
+            );
+          })}
+          {/* 藏干行 *
+          <Text pl={2} fontWeight="bold" fontSize="2xl">藏干</Text>
+          {['year', 'month', 'day', 'time'].map((pillar) => (
+            <VStack key={pillar} spacing={0} align="center">
+              {Object.entries(userInfo.reportData.bazi[pillar].canggan || {}).map(([gan, weight], idx) => (
+                <Text 
+                  key={idx} 
+                  fontSize="xl"
+                  className={wuxingColors[ganWuxing[gan]]}
+                >
+                  {gan}
+                </Text>
+              ))}
+            </VStack>
+          ))}
+
+       
+          <Text pl={2} fontWeight="bold" fontSize="2xl">支神</Text>
+          {['year', 'month', 'day', 'time'].map((pillar) => {
+            const zhi = userInfo.reportData.bazi[pillar].zhi;
+            return (
+              <Text 
+                key={pillar} 
+                textAlign="center" 
+                fontSize="xl"
+                className={wuxingColors[zhiWuxing[zhi]]}
+              >
+                {userInfo.reportData.bazi[pillar].zhi_shens}
+              </Text>
+            );
+          })} */}
         </Grid>
       </Box>
+
+
+      <Box className="card">
+        <Text className="card-title" fontSize="xl">今日运势</Text>
+        
+        {/* 运势分数 */}
+        <Grid templateColumns="repeat(5, 1fr)" gap={4} mb={6}>
+          {[
+            { 
+              label: '爱情运', 
+              score: dailyFortune.scores.love, 
+              color: 'pink',
+              description: dailyFortune.scores.love > 35 
+                ? '桃花运旺盛，易获得良缘'
+                : '感情需谨慎，不宜轻易承诺'
+            },
+            { 
+              label: '财运', 
+              score: dailyFortune.scores.wealth, 
+              color: 'yellow',
+              description: dailyFortune.scores.wealth > 35
+                ? '财源广进，投资顺利'
+                : '理财需谨慎，避免冒险投资'
+            },
+            { 
+              label: '事业运', 
+              score: dailyFortune.scores.career, 
+              color: 'purple',
+              description: dailyFortune.scores.career > 35
+                ? '贵人相助，事业有成'
+                : '事业有阻，需稳扎稳打'
+            },
+            { 
+              label: '学习运', 
+              score: dailyFortune.scores.study, 
+              color: 'blue',
+              description: dailyFortune.scores.study > 35
+                ? '思维敏捷，学习顺利'
+                : '注意力分散，需要专注'
+            },
+            { 
+              label: '健康运', 
+              score: dailyFortune.scores.health, 
+              color: 'green',
+              description: dailyFortune.scores.health > 35
+                ? '精力充沛，身体健康'
+                : '注意休息，避免过度劳累'
+            },
+          ].map((item) => (
+            <VStack key={item.label} spacing={2}>
+              <CircularProgress 
+                value={item.score} 
+                color={`${item.color}.400`}
+                size="80px"
+                thickness="8px"
+                trackColor={`${item.color}.50`}
+              >
+                <CircularProgressLabel 
+                  fontSize="md"
+                  fontWeight="bold"
+                  color={`${item.color}.500`}
+                  _dark={{ color: `${item.color}.300` }}
+                >
+                  {item.score}
+                </CircularProgressLabel>
+              </CircularProgress>
+              <Text 
+                fontSize="md" 
+                fontWeight="bold"
+                color={`${item.color}.500`}
+                _dark={{ color: `${item.color}.300` }}
+              >
+                {item.label}
+              </Text>
+              <Text
+                fontSize="xs"
+                color="gray.600"
+                _dark={{ color: 'gray.300' }}
+                textAlign="center"
+                px={2}
+              >
+                {item.description}
+              </Text>
+            </VStack>
+          ))}
+        </Grid>
+
+        {/* 幸运信息 */}
+        <Grid templateColumns="repeat(3, 1fr)" gap={4} mb={6}>
+          {[
+            { 
+              label: '幸运色', 
+              value: dailyFortune.lucky.color.name,
+              bgColor: dailyFortune.lucky.color.hex 
+            },
+            { label: '幸运数字', value: dailyFortune.lucky.numbers },
+            { 
+              label: '财星方位', 
+              directions: [
+                { 
+                  god: '财神', 
+                  dir: dailyFortune.lucky.direction.财神, 
+                  color: 'yellow.500',
+                  bgLight: 'yellow.50',
+                  bgDark: 'yellow.900',
+                  borderLight: 'yellow.200',
+                  borderDark: 'yellow.700'
+                },
+                { 
+                  god: '贵人', 
+                  dir: dailyFortune.lucky.direction.贵人, 
+                  color: 'purple.500',
+                  bgLight: 'purple.50',
+                  bgDark: 'purple.900',
+                  borderLight: 'purple.200',
+                  borderDark: 'purple.700'
+                },
+                { 
+                  god: '喜神', 
+                  dir: dailyFortune.lucky.direction.喜神, 
+                  color: 'pink.500',
+                  bgLight: 'pink.50',
+                  bgDark: 'pink.900',
+                  borderLight: 'pink.200',
+                  borderDark: 'pink.700'
+                },
+                { 
+                  god: '福神', 
+                  dir: dailyFortune.lucky.direction.福神, 
+                  color: 'green.500',
+                  bgLight: 'green.50',
+                  bgDark: 'green.900',
+                  borderLight: 'green.200',
+                  borderDark: 'green.700'
+                },
+              ]
+            },
+          ].map((item) => (
+            <VStack 
+              key={item.label}
+              p={3} 
+              bg="whiteAlpha.900" 
+              _dark={{ bg: 'whiteAlpha.200' }}
+              borderRadius="lg"
+              spacing={2}
+              position="relative"
+              h="full"
+            >
+              <Text 
+                fontSize="lg" 
+                fontWeight="semibold"
+                color="gray.700"
+                _dark={{ color: 'gray.200' }}
+                borderBottom="2px solid"
+                borderColor="pink.200"
+                pb={1}
+              >
+                {item.label}
+              </Text>
+              {item.directions ? (
+                <Grid templateColumns="repeat(2, 1fr)" gap={2} w="full">
+                  {item.directions.map((direction) => (
+                    <Box
+                      key={direction.god}
+                      p={2}
+                      borderRadius="md"
+                      bg={direction.bgLight}
+                      border="1px solid"
+                      borderColor={direction.borderLight}
+                      _dark={{ 
+                        borderColor: direction.borderDark 
+                      }}
+                      transition="all 0.2s"
+                      _hover={{
+                        transform: "scale(1.05)",
+                        boxShadow: "sm"
+                      }}
+                    >
+                      <VStack spacing={0}>
+                        <Text
+                          fontSize="sm"
+                          color={direction.color}
+                          fontWeight="bold"
+                        >
+                          {direction.god}
+                        </Text>
+                        <Text
+                          fontSize="md"
+                          fontWeight="semibold"
+                          color={`${direction.color}`}
+                          _dark={{ color: `${direction.color}` }}
+                        >
+                          {direction.dir}
+                        </Text>
+                      </VStack>
+                    </Box>
+                  ))}
+                </Grid>
+              ) : (
+                <Flex 
+                  justify="center" 
+                  align="center" 
+                  w="full" 
+                  h="full"
+                  bg={item.bgColor || 'transparent'}
+                  borderRadius="md"
+                  p={4}
+                  minH="120px"
+                >
+                  <Text 
+                    fontSize="4xl"
+                    fontWeight="bold"
+                    color={item.bgColor ? 'white' : 'gray.800'}
+                    _dark={{ color: item.bgColor ? 'white' : 'gray.100' }}
+                    textAlign="center"
+                    w="50%"
+                    mx="auto"
+                  >
+                    {item.value}
+                  </Text>
+                </Flex>
+              )}
+            </VStack>
+          ))}
+        </Grid>
+
+        {/* 吉凶事项 */}
+        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+          <Box 
+            p={4} 
+            bg="green.50" 
+            _dark={{ 
+              bg: 'rgba(154, 230, 180, 0.06)'  // 更柔和的绿色背景
+            }}
+            borderRadius="lg"
+          >
+            <Text 
+              fontSize="6xl" 
+              color="green.500" 
+              _dark={{ 
+                color: 'green.200'
+              }}
+              mb={2} 
+              fontWeight="bold"
+            >
+              宜
+            </Text>
+            <VStack align="start" spacing={1}>
+              {dailyFortune.activities.good.map((item, index) => (
+                <Text 
+                  key={index}
+                  fontSize="3xl"
+                  color="blackAlpha.800"
+                  _dark={{ color: 'whiteAlpha.800' }}
+                >
+                  {item}
+                </Text>
+              ))}
+            </VStack>
+          </Box>
+          <Box 
+            p={4} 
+            bg="red.50"
+            _dark={{ 
+              bg: 'rgba(254, 178, 178, 0.06)'  // 更柔和的红色背景
+            }}
+            borderRadius="lg"
+          >
+            <Text 
+              fontSize="6xl" 
+              color="red.500"
+              _dark={{ 
+                color: 'red.200'
+              }}
+              mb={2} 
+              fontWeight="bold"
+            >
+              忌
+            </Text>
+            <VStack align="start" spacing={1}>
+              {dailyFortune.activities.bad.map((item, index) => (
+                <Text 
+                  key={index}
+                  fontSize="3xl"
+                  color="blackAlpha.800"
+                  _dark={{ color: 'whiteAlpha.800' }}
+                >
+                  {item}
+                </Text>
+              ))}
+            </VStack>
+          </Box>
+        </Grid>
+      </Box>
+
 
       <Box className="card" mt={6}>
         <Text className="card-title">选择解析主题</Text>
@@ -171,6 +747,13 @@ export default function Report() {
             >
               健康运势
             </Radio>
+            <Radio 
+              value="profession"
+              colorScheme="pink"
+              size="lg"
+            >
+              流年分析
+            </Radio>
           </Stack>
         </RadioGroup>
       </Box>
@@ -193,7 +776,7 @@ export default function Report() {
             bgGradient="linear(to-r, pink.400, purple.400)"
             bgClip="text"
           >
-            特别想了解的问题（选填）
+            特别想了解的问题（选填）注意：填入后选择的解析主题不再进行分析
           </FormLabel>
           <Textarea
             value={specialQuestion}
@@ -215,81 +798,51 @@ export default function Report() {
         </FormControl>
       </Box>
 
-
-      <Button
-        w="full"
-        size="lg"
-        bgGradient="linear(to-r, purple.500, pink.500)"
-        color="white"
-        _hover={{
-          bgGradient: "linear(to-r, purple.600, pink.600)",
-          transform: "scale(1.02)"
-        }}
-        isLoading={isLoading}
-        loadingText="正在解析命盘..."
-        spinner={
-          <Spinner
-            thickness="4px"
-            speed="0.65s"
-            emptyColor="whiteAlpha.300"
-            color="white"
-            size="md"
-          />
-        }
-        onClick={async () => {
-          try {
-            setIsLoading(true)
-            
-            // 准备发送的数据
-            const requestData = {
-              reportData: userInfo.reportData,
-              topic: selectedTopic,
-              prompts: {
-                comprehensive: "请根据八字命盘进行综合运势分析，包括性格特征、事业发展、财运、感情等各个方面。",
-                career: "请重点分析八字命盘中关于事业发展的信息，包括职业方向、发展机遇、注意事项等。",
-                wealth: "请详细分析八字命盘中的财运信息，包括财运走势、理财建议、投资机会等。",
-                relationship: "请重点解析八字命盘中的感情姻缘信息，包括感情运势、桃花运、婚姻建议等。",
-                health: "请根据八字命盘分析健康状况，包括需要注意的健康问题、养生建议等。"
-              }[selectedTopic],
-              specialQuestion: specialQuestion.trim() // 添加特殊问题
-            }
-            
-            const response = await fetch('/api/generate_report', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(requestData)
-            });
-            
-            if (!response.ok) {
-              throw new Error('分析请求失败');
-            }
-            
-            const result = await response.json();
-            useUserStore.setState({ analysisResult: result });
-            router.push('/analysis');
-            
-          } catch (error: any) {
-            console.error('分析失败:', error);
-            toast({
-              title: '分析失败',
-              description: error.message || '请稍后重试',
-              status: 'error',
-              duration: 3000,
-              isClosable: true,
-              position: 'top',
-            });
-          } finally {
-            setIsLoading(false)
+      <VStack spacing={4} w="full">
+        {isLoading && (
+          <Box w="full" px={4}>
+            <Text mb={2} textAlign="center" color="gray.500">
+              {loadingStatus}
+            </Text>
+            <Progress
+              value={progress}
+              size="xs"
+              colorScheme="pink"
+              hasStripe
+              isAnimated
+              borderRadius="full"
+            />
+          </Box>
+        )}
+        
+        <Button
+          w="full"
+          size="lg"
+          bgGradient="linear(to-r, purple.500, pink.500)"
+          color="white"
+          _hover={{
+            bgGradient: "linear(to-r, purple.600, pink.600)",
+            transform: "scale(1.02)"
+          }}
+          isLoading={isLoading}
+          loadingText={`分析进度 ${Math.round(progress)}%`}
+          spinner={
+            <Spinner
+              thickness="4px"
+              speed="0.65s"
+              emptyColor="whiteAlpha.300"
+              color="white"
+              size="md"
+            />
           }
-        }}
-      >
-        <VStack spacing={1}>
-          <Text fontSize="lg">开启命理解析</Text>
-          <Text fontSize="xs" opacity={0.9}>滴天髓深度分析</Text>
-        </VStack>
-      </Button>
+          onClick={handleAnalysis}
+        >
+          <VStack spacing={1}>
+            <Text fontSize="lg">开启命理解析</Text>
+            <Text fontSize="xs" opacity={0.9}>滴天髓深度分析</Text>
+          </VStack>
+        </Button>
+      </VStack>
     </Container>
   )
 }

@@ -62,18 +62,17 @@
 
 /* 卡片样式 */
 .card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  overflow-x: auto; /* 在小屏幕上可以横向滚动 */
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+/* 可以添加悬停效果 */
+.card Text:hover {
+  cursor: pointer;
+  opacity: 0.8;
 }
 
 .card-title {
@@ -143,4 +142,10 @@
 
 [data-theme="dark"] .icon {
   color: #FFD700;
+}
+
+/* 左侧标签样式 */
+.card .chakra-grid > :first-child {
+  color: #666;
+  font-weight: 500;
 } 

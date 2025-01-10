@@ -8,8 +8,11 @@ interface UserState {
   lunarBirthDate: string
   age: number
   reportData: any  // 可以根据实际数据结构定义更具体的类型
+  dailyFortune: any
   analysisResult: any
   setUserInfo: (info: Partial<UserState>) => void
+  selectedTopic?: string;
+  specialQuestion?: string;
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -20,6 +23,9 @@ export const useUserStore = create<UserState>((set) => ({
   lunarBirthDate: '',
   age: 0,
   reportData: null,
+  dailyFortune: null,
   analysisResult: null,
-  setUserInfo: (info) => set((state) => ({ ...state, ...info }))
+  setUserInfo: (info) => set((state) => ({ ...state, ...info })),
+  selectedTopic: '',
+  specialQuestion: '',
 })) 

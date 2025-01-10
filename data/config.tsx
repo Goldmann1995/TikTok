@@ -21,9 +21,19 @@ const siteConfig = {
         id: 'home'
       },
       {
-        label: '算命',
+        label: '基础信息',
         href: '/fortune',
         id: 'fortune'
+      },
+      {
+        label: '八字排盘',
+        href: '/report',
+        id: 'report'
+      },
+      {
+        label: '命理解析',
+        href: '/analysis',
+        id: 'analysis'
       },
       {
         label: 'Login',
