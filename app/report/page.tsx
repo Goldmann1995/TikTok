@@ -254,7 +254,7 @@ export default function Report() {
               specialQuestion: specialQuestion.trim() // 添加特殊问题
             }
             
-            const response = await fetch('http://localhost:5000/generate_report', {
+            const response = await fetch('/api/generate_report', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

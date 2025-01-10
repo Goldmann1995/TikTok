@@ -58,7 +58,7 @@ export default function FortuneForm() {
       const hour = timeMap[timeRanges[parseInt(formData.birthTime)]] || '0';
 
       // 发送请求到后端
-      const response = await fetch('http://localhost:5000/bazi', {
+      const response = await fetch('/api/bazi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -16,7 +16,7 @@ from gradio_client import Client
 import re
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/bazi', methods=['POST'])
 def analyze_bazi():
@@ -365,4 +365,4 @@ def generate_report():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
