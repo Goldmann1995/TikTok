@@ -135,7 +135,6 @@ export default function Analysis() {
         right={0}
         bottom={0}
         opacity={0.1}
-        bgImage="url('/stars-pattern.png')"
         zIndex={0}
       />
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUserStore } from '@/app/store/userStore'
 import { Container, VStack, Box, Text, Grid, Button, Flex,
@@ -91,13 +91,13 @@ export default function Report() {
   const textareaBorderColor = useColorModeValue('pink.100', 'whiteAlpha.300')
   const textareaBorderHoverColor = useColorModeValue('pink.200', 'whiteAlpha.400')
   const textareaBorderFocusColor = useColorModeValue('pink.300', 'whiteAlpha.500')
-  const [progress, setProgress] = useState(0)
-  const [loadingStatus, setLoadingStatus] = useState('')
   const [timeoutId, setTimeoutId] = useState<TimeoutData | null>(null)
 
   useEffect(() => {
+    // 如果没有报告数据，重定向到 fortune 页面
     if (!userInfo.reportData) {
       router.push('/fortune')
+      return
     }
 
     // 组件卸载时的清理函数
@@ -108,11 +108,9 @@ export default function Report() {
           toast.close(timeoutId.toastId)
         }
       }
-      setIsLoading(false)
-      setProgress(0)
-      setLoadingStatus('')
+      useUserStore.setState({ analysisProgress: 0 })
     }
-  }, [userInfo, router, timeoutId, toast])
+  }, [userInfo.reportData, router, timeoutId, toast])
 
   if (!userInfo.reportData) {
     return null
@@ -139,134 +137,79 @@ export default function Report() {
   })
   console.log(userInfo)
 
-  const simulateProgress = () => {
-    setProgress(0)
-    let currentProgress = 0
-    
-    const interval = setInterval(() => {
-      currentProgress += Math.random() * 15
-      if (currentProgress > 90) {
-        currentProgress = 90
-        clearInterval(interval)
-      }
-      setProgress(Math.min(currentProgress, 90))
-    }, 1000)
-
-    return interval
-  }
-
-  const updateLoadingStatus = () => {
-    const statusMessages = [
-      '正在收集命盘信息...',
-      '正在解析五行关系...',
-      '正在计算运势指数...',
-      '正在生成详细报告...'
-    ]
-    
-    let index = 0
-    const interval = setInterval(() => {
-      setLoadingStatus(statusMessages[index])
-      index = (index + 1) % statusMessages.length
-    }, 3000)
-
-    return interval
-  }
-
   const handleAnalysis = async () => {
     try {
       setIsLoading(true)
+      let currentProgress = 0
       
-      // 在发送请求前保存用户选择的内容到 store
-      useUserStore.setState({ 
-        selectedTopic,
-        specialQuestion
+      // 使用 useRef 来存储 interval ID
+      const progressInterval = setInterval(() => {
+        currentProgress += Math.random() * 3.5 // 每次增加0-1.5%
+        if (currentProgress > 90) {
+          currentProgress = 90
+          clearInterval(progressInterval)
+        }
+        // 只有当进度真正改变时才更新状态
+        if (currentProgress !== userInfo.analysisProgress) {
+          useUserStore.setState({ analysisProgress: Math.min(currentProgress, 90) })
+        }
+      }, 800)
+
+      // 确保在组件卸载或请求完成时清除定时器
+      const cleanup = () => {
+        clearInterval(progressInterval)
+      }
+
+      // 添加到 timeoutId 中以便清理
+      setTimeoutId({
+        timerId: progressInterval,
       })
       
-      const progressInterval = simulateProgress()
-      const statusInterval = updateLoadingStatus()
-      
-      const timeout = setTimeout(() => {
-        const toastId = toast({
-          title: '命理解析进行中',
-          description: '系统正在进行深度分析，请稍候...',
-          status: 'info',
-          duration: null,
-          isClosable: true,
-          position: 'top',
-          variant: 'solid',
-          containerStyle: {
-            maxWidth: '400px'
-          },
-          render: ({ onClose }) => (
-            <Box
-              color="white"
-              p={4}
-              bg="rgba(0, 0, 0, 0.8)"
-              backdropFilter="blur(10px)"
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.200"
-            >
-              <Flex align="center" gap={3}>
-                <Spinner
-                  thickness="3px"
-                  speed="0.65s"
-                  color="pink.300"
-                  size="md"
-                />
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="bold">命理解析进行中</Text>
-                  <Text fontSize="sm" color="whiteAlpha.800">
-                    系统正在进行深度分析，请稍候...
-                  </Text>
-                </VStack>
-              </Flex>
-            </Box>
-          )
-        })
-        setTimeoutId({ timerId: timeout, toastId })
-      }, 15000)
-
-      const requestData = {
-        reportData: userInfo.reportData,
-        topic: selectedTopic,
-        prompts: {
-          comprehensive: "请根据八字命盘进行综合运势分析，包括性格特征、事业发展、财运、感情等各个方面。",
-          career: "请重点分析八字命盘中关于事业发展的信息，包括职业方向、发展机遇、注意事项等。",
-          wealth: "请详细分析八字命盘中的财运信息，包括财运走势、理财建议、投资机会等。",
-          relationship: "请重点解析八字命盘中的感情姻缘信息，包括感情运势、桃花运、婚姻建议等。",
-          health: "请根据八字命盘分析健康状况，包括需要注意的健康问题、养生建议等。",
-          profession: "请根据八字命盘分析职业发展，包括职业方向、发展机遇、注意事项等。"
-        }[selectedTopic],
-        specialQuestion: specialQuestion.trim()
-      }
-      
-      const response = await fetch('/api/generate_report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('分析请求失败');
-      }
-      
-      const result = await response.json();
-      useUserStore.setState({ analysisResult: result });
-      
-      clearInterval(progressInterval)
-      clearInterval(statusInterval)
-      if (timeoutId) {
-        clearTimeout(timeoutId.timerId)
-        if (timeoutId.toastId) {
-          toast.close(timeoutId.toastId)
+      try {
+        const requestData = {
+          reportData: userInfo.reportData,
+          topic: selectedTopic,
+          prompts: {
+            comprehensive: "请根据八字命盘进行综合运势分析...",
+            career: "请重点分析八字命盘中关于事业发展的信息，包括职业方向、发展机遇、注意事项等。",
+            wealth: "请详细分析八字命盘中的财运信息，包括财运走势、理财建议、投资机会等。",
+            relationship: "请重点解析八字命盘中的感情姻缘信息，包括感情运势、桃花运、婚姻建议等。",
+            health: "请根据八字命盘分析健康状况，包括需要注意的健康问题、养生建议等。",
+            profession: "请根据八字命盘分析职业发展，包括职业方向、发展机遇、注意事项等。"
+          }[selectedTopic],
+          specialQuestion: specialQuestion.trim()
         }
+        
+        const response = await fetch('/api/generate_report', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('分析请求失败');
+        }
+        
+        const result = await response.json();
+        
+        // 清理定时器
+        cleanup()
+        
+        // 设置100%进度
+        useUserStore.setState({ 
+          analysisResult: result,
+          analysisProgress: 100 
+        })
+        
+        await new Promise(resolve => setTimeout(resolve, 500))
+        router.push('/analysis');
+        
+      } catch (error) {
+        cleanup()
+        throw error;
       }
-      
-      setProgress(100)
-      router.push('/analysis');
       
     } catch (error: any) {
       console.error('分析失败:', error);
@@ -279,10 +222,8 @@ export default function Report() {
         position: 'top',
       });
     } finally {
-      if (timeoutId?.toastId) {
-        toast.close(timeoutId.toastId)
-      }
       setIsLoading(false)
+      useUserStore.setState({ analysisProgress: 0 })
     }
   }
 
@@ -799,22 +740,6 @@ export default function Report() {
       </Box>
 
       <VStack spacing={4} w="full">
-        {isLoading && (
-          <Box w="full" px={4}>
-            <Text mb={2} textAlign="center" color="gray.500">
-              {loadingStatus}
-            </Text>
-            <Progress
-              value={progress}
-              size="xs"
-              colorScheme="pink"
-              hasStripe
-              isAnimated
-              borderRadius="full"
-            />
-          </Box>
-        )}
-        
         <Button
           w="full"
           size="lg"
@@ -825,7 +750,7 @@ export default function Report() {
             transform: "scale(1.02)"
           }}
           isLoading={isLoading}
-          loadingText={`分析进度 ${Math.round(progress)}%`}
+          loadingText={`分析进度 ${Math.round(userInfo.analysisProgress || 0)}%`}
           spinner={
             <Spinner
               thickness="4px"
