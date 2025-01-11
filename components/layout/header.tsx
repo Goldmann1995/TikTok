@@ -8,7 +8,7 @@ import {
 import { useScroll } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/components/supabase/supabase'
-
+import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { Logo } from './logo'
@@ -17,6 +17,7 @@ import Navigation from './navigation'
 export interface HeaderProps extends Omit<BoxProps, 'children'> {}
 
 export const Header = (props: HeaderProps) => {
+  const router = useRouter()
   const ref = React.useRef<HTMLHeadingElement>(null)
   const [y, setY] = React.useState(0)
   const [user, setUser] = useState<any>(null)
@@ -39,6 +40,7 @@ export const Header = (props: HeaderProps) => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    router.push('/')
   }
 
   const { scrollY } = useScroll()
