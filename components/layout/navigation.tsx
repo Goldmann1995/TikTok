@@ -51,7 +51,7 @@ const Navigation = ({ user, onSignOut }: NavigationProps) => {
           return (
             <NavLink
               display={['none', null, 'block']}
-              href={`/${user?.id}${href}` || `#${id}`}
+              href={href ? (user ? `/${user.id}${href}` : href) : `#${id}`}
               key={i}
               isActive={
                 !!(
