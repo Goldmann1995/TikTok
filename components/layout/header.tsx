@@ -6,6 +6,8 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react'
 import { useScroll } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/components/supabase/supabase'
 
 import * as React from 'react'
 
@@ -17,7 +19,27 @@ export interface HeaderProps extends Omit<BoxProps, 'children'> {}
 export const Header = (props: HeaderProps) => {
   const ref = React.useRef<HTMLHeadingElement>(null)
   const [y, setY] = React.useState(0)
+  const [user, setUser] = useState<any>(null)
   const { height = 0 } = ref.current?.getBoundingClientRect() ?? {}
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+    }
+    checkUser()
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
 
   const { scrollY } = useScroll()
   React.useEffect(() => {
@@ -57,7 +79,7 @@ export const Header = (props: HeaderProps) => {
               }
             }}
           />
-          <Navigation />
+          <Navigation user={user} onSignOut={handleSignOut} />
         </Flex>
       </Container>
     </Box>

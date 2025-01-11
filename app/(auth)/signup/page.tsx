@@ -1,7 +1,6 @@
 'use client'
 
-import { Box, Center, Stack, Text, useColorMode } from '@chakra-ui/react'
-import { Auth } from '@saas-ui/auth'
+import { Box, Center, Stack, Text, useColorMode, Button, Input, FormControl, FormLabel } from '@chakra-ui/react'
 import { Link } from '@saas-ui/react'
 import { NextPage } from 'next'
 import NextLink from 'next/link'
@@ -12,24 +11,35 @@ import { PageTransition } from '#components/motion/page-transition'
 import { Section } from '#components/section'
 import siteConfig from '#data/config'
 import { Logo } from '#data/logo'
+import { useState } from 'react'
+// import { supabase } from '@/components/supabase/supabase'
+import { supabaseClient } from '@/lib/supabase-client'
 const GoogleIcon = () => <Icons.FaGoogle />
 const GithubIcon = () => <Icons.FaGithub />
 
 const providers = {
-  google: {
-    name: 'Google',
-    icon: GoogleIcon
-  },
-  github: {
-    name: 'Github',
-    icon: GithubIcon,
-    variant: 'solid',
-  },
+  // google: {
+  //   name: 'Google',
+  //   icon: GoogleIcon,
+  //   callbackUrl: `${window.location.origin}/auth/callback`
+  // },
+  // github: {
+  //   name: 'Github',
+  //   icon: GithubIcon,
+  //   variant: 'solid',
+  //   callbackUrl: `${window.location.origin}/auth/callback`
+  // },
+
 }
 
 const Signup: NextPage = () => {
   const { colorMode } = useColorMode()
   const isDark = colorMode === 'dark'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   return (
     <Section height="100vh" innerWidth="container.xl">
@@ -77,23 +87,82 @@ const Signup: NextPage = () => {
               borderRadius="xl"
               boxShadow="xl"
             >
-              <Auth
-                view="signup"
-                title={siteConfig.signup.title}
-                providers={providers}
-                loginLink={<Link href="/login">Log in</Link>}
-              >
-                <Text color="muted" fontSize="sm">
-                  By signing up you agree to our{' '}
-                  <Link href={siteConfig.termsUrl} color={isDark ? 'white' : 'black'}>
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href={siteConfig.privacyUrl} color={isDark ? 'white' : 'black'}>
-                    Privacy Policy
-                  </Link>
-                </Text>
-              </Auth>
+                <Stack spacing={4}>
+                  <Text  color={isDark ? 'white' : 'black'} fontSize="3xl" fontWeight="bold" textAlign="center">
+                    {siteConfig.signup.title}
+                  </Text>
+                  {error && (
+                    <Text color="red.500" fontSize="sm" textAlign="center">
+                      {error}
+                    </Text>
+                  )}
+                  {success && (
+                    <Text color="green.500" fontSize="sm" textAlign="center">
+                      {success}
+                    </Text>
+                  )}
+                  <FormControl>
+                    <FormLabel>Email</FormLabel>
+                    <Input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Password</FormLabel>
+                    <Input 
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </FormControl>
+                  <Text color="muted" fontSize="sm">
+                    注册即表示您同意我们的{' '}
+                    <Link href={siteConfig.termsUrl} color={isDark ? 'white' : 'black'}>
+                      服务条款
+                    </Link>{' '}
+                    and{' '}
+                    <Link href={siteConfig.privacyUrl} color={isDark ? 'white' : 'black'}>
+                      隐私政策
+                    </Link>
+                  </Text>
+                  <Button
+                    isLoading={isLoading}
+                    onClick={() => {
+                      setIsLoading(true)
+                      setError('')
+                      setSuccess('')
+                      
+                      supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                          emailRedirectTo: `${window.location.origin}/fortune`
+                        }
+                      })
+                      .then(({ data, error }) => {
+                        if (error) throw error
+                        setSuccess('注册成功！请查看邮箱完成验证。')
+                      })
+                      .catch((error) => {
+                        setError(error.message)
+                      })
+                      .finally(() => {
+                        setIsLoading(false)
+                      })
+                    }}
+                  >
+                    注册
+                  </Button>
+                  <Text color="muted" fontSize="sm">
+                    已有账号？
+                    <Link href="/login" color={isDark ? 'white' : 'black'}>
+                      登录
+                    </Link>
+                  </Text>
+                  
+                </Stack>
             </Box>
           </Center>
         </Stack>

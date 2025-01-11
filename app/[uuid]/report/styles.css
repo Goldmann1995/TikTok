@@ -1,0 +1,151 @@
+/* 五行颜色定义 */
+.wuxing-gold {
+  color: #FFD700; /* 金 */
+}
+
+.wuxing-wood {
+  color: #228B22; /* 木 */
+}
+
+.wuxing-water {
+  color: #1E90FF; /* 水 */
+}
+
+.wuxing-fire {
+  color: #FF4500; /* 火 */
+}
+
+.wuxing-earth {
+  color: #CD853F; /* 土 */
+}
+
+/* 深色模式下的五行颜色 */
+[data-theme="dark"] .wuxing-gold {
+  color: #FFE55C;
+}
+
+[data-theme="dark"] .wuxing-wood {
+  color: #90EE90;
+}
+
+[data-theme="dark"] .wuxing-water {
+  color: #87CEFA;
+}
+
+[data-theme="dark"] .wuxing-fire {
+  color: #FF6347;
+}
+
+[data-theme="dark"] .wuxing-earth {
+  color: #DEB887;
+}
+
+/* 圆形样式 */
+.circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2em;
+  border: 2px solid currentColor;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* 卡片样式 */
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  overflow-x: auto; /* 在小屏幕上可以横向滚动 */
+}
+
+/* 可以添加悬停效果 */
+.card Text:hover {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.card-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 15px;
+  background: linear-gradient(45deg, #FFB7C5, #D3A4FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 网格布局 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.grid-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.grid-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.icon {
+  font-size: 1.5em;
+  color: #FFB7C5;
+}
+
+/* 按钮样式 */
+.button {
+  width: 100%;
+  padding: 20px;
+  border-radius: 15px;
+  background: linear-gradient(45deg, #FFB7C5, #D3A4FF);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px rgba(255, 183, 197, 0.3);
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] .card {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .grid-item {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .icon {
+  color: #FFD700;
+}
+
+/* 左侧标签样式 */
+.card .chakra-grid > :first-child {
+  color: #666;
+  font-weight: 500;
+} 

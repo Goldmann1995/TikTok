@@ -1,8 +1,7 @@
-import { HStack } from '@chakra-ui/react'
+import { HStack, Icon } from '@chakra-ui/react'
 import { useDisclosure, useUpdateEffect } from '@chakra-ui/react'
 import { useScrollSpy } from 'hooks/use-scrollspy'
-import { usePathname, useRouter } from 'next/navigation'
-
+import { useRouter, usePathname} from 'next/navigation'
 import * as React from 'react'
 
 import { MobileNavButton } from '#components/mobile-nav'
@@ -11,8 +10,16 @@ import { NavLink } from '#components/nav-link'
 import siteConfig from '#data/config'
 
 import ThemeToggle from './theme-toggle'
+import { Button } from '@chakra-ui/react'
+import { Link } from '@chakra-ui/react'
+import { FiLogOut } from 'react-icons/fi'
 
-const Navigation: React.FC = () => {
+interface NavigationProps {
+  user: any;
+  onSignOut: () => void;
+}
+
+const Navigation = ({ user, onSignOut }: NavigationProps) => {
   const mobileNav = useDisclosure()
   const router = useRouter()
   const path = usePathname()
@@ -32,25 +39,45 @@ const Navigation: React.FC = () => {
   }, [mobileNav.isOpen])
 
   return (
-    <HStack spacing="2" flexShrink={0}>
-      {siteConfig.header.links.map(({ href, id, ...props }, i) => {
-        return (
-          <NavLink
+    <HStack spacing="8">
+      {siteConfig.header.links
+        .filter(link => {
+          if (user) {
+            return !['login', 'signup'].includes(link.id || '');
+          }
+          return true;
+        })
+        .map(({ href, id, ...props }, i) => {
+          return (
+            <NavLink
+              display={['none', null, 'block']}
+              href={`/${user?.id}${href}` || `#${id}`}
+              key={i}
+              isActive={
+                !!(
+                  (id && activeId === id) ||
+                  (href && !!path?.match(new RegExp(href)))
+                )
+              }
+              {...props}
+            >
+              {props.label}
+            </NavLink>
+          )
+        })}
+
+      {user && (
+        <HStack spacing={4}>
+          <Button
             display={['none', null, 'block']}
-            href={href || `/#${id}`}
-            key={i}
-            isActive={
-              !!(
-                (id && activeId === id) ||
-                (href && !!path?.match(new RegExp(href)))
-              )
-            }
-            {...props}
+            variant="ghost"
+            onClick={onSignOut}
+            rightIcon={<Icon as={FiLogOut} />}
           >
-            {props.label}
-          </NavLink>
-        )
-      })}
+            {user.email}
+          </Button>
+        </HStack>
+      )}
 
       <ThemeToggle />
 

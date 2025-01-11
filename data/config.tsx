@@ -38,11 +38,13 @@ const siteConfig = {
       {
         label: 'Login',
         href: '/login',
+        id: 'login',
       },
       {
         label: 'Sign Up',
         href: '/signup',
         variant: 'primary',
+        id: 'signup',
       },
     ],
   },
