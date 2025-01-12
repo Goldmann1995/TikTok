@@ -87,9 +87,9 @@ export default function FortuneForm() {
       // 解析日期和时间
       const [year, month, day] = formData.birthDate.split('-');
       const hour = timeMap[timeRanges[parseInt(formData.birthTime)]] || '0';
-
+       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
       // 发送请求到后端
-      const response = await fetch('/http://localhost:5000/bazi', {
+      const response = await fetch(`${API_BASE_URL}/bazi`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

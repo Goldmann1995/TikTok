@@ -193,8 +193,8 @@ export default function Report() {
           }[selectedTopic],
           specialQuestion: specialQuestion.trim()
         }
-        
-        const response = await fetch('http://localhost:5000/generate_report', {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+        const response = await fetch(`${API_BASE_URL}/generate_report`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
