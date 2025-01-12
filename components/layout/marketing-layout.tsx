@@ -1,9 +1,7 @@
 'use client'
 
 import { Box, SkipNavContent, SkipNavLink } from '@chakra-ui/react'
-
 import { ReactNode } from 'react'
-
 import {
   AnnouncementBanner,
   AnnouncementBannerProps,

@@ -45,18 +45,25 @@ const Navigation = ({ user, onSignOut }: NavigationProps) => {
           if (user) {
             return !['login', 'signup'].includes(link.id || '');
           }
-          return true;
+          return !link.requireAuth;
         })
-        .map(({ href, id, ...props }, i) => {
+        .map(({ href, id, requireAuth, ...props }, i) => {
+          const finalHref = href === '/' 
+            ? '/' 
+            : (href === '/my' && user 
+              ? `/${user.id}` 
+              : (href && user ? `/${user.id}${href}` : href));
+            
           return (
             <NavLink
               display={['none', null, 'block']}
-              href={href ? (user ? `/${user.id}${href}` : href) : `#${id}`}
+              href={finalHref || `#${id}`}
               key={i}
               isActive={
                 !!(
                   (id && activeId === id) ||
-                  (href && !!path?.match(new RegExp(href)))
+                  (href && !!path?.match(new RegExp(href))) ||
+                  (href === '/my' && path?.includes(user?.id || ''))
                 )
               }
               {...props}

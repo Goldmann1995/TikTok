@@ -1,6 +1,6 @@
 'use client'
 
-import { Center, useColorMode } from '@chakra-ui/react'
+import { Center, useColorMode, useToast } from '@chakra-ui/react'
 import { Link } from '@saas-ui/react'
 import { BackgroundGradient } from 'components/gradients/background-gradient'
 import { PageTransition } from 'components/motion/page-transition'
@@ -15,27 +15,18 @@ import {
   Button, 
   Input, 
   FormControl, 
-  FormLabel 
+  FormLabel, 
+  Modal, 
+  ModalOverlay, 
+  ModalContent, 
+  ModalHeader, 
+  ModalCloseButton, 
+  ModalBody, 
+  ModalFooter 
 } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
-import NextLink from 'next/link'
-import { Logo } from '#data/logo'
-import siteConfig from '#data/config'
+import { useRouter } from 'next/navigation'
 
-const GoogleIcon = () => <Icons.FaGoogle />
-const GithubIcon = () => <Icons.FaGithub />
-
-// const providers = {
-//   google: {
-//     name: 'Google',
-//     icon: GoogleIcon
-//   },
-//   github: {
-//     name: 'Github',
-//     icon: GithubIcon,
-//     variant: 'solid',
-//   },
-// }
 
 const Login: NextPage = () => {
   const { colorMode } = useColorMode()
@@ -45,6 +36,10 @@ const Login: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [resetEmail, setResetEmail] = useState('')
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false)
+  const toast = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     const checkUser = async () => {
@@ -55,6 +50,59 @@ const Login: NextPage = () => {
     }
     checkUser()
   }, [])
+
+  useEffect(() => {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        const newPassword = prompt("请输入您的新密码：");
+        if (newPassword) {
+          const { data, error } = await supabaseClient.auth
+            .updateUser({ password: newPassword })
+
+          if (data) {
+            toast({
+              title: "密码更新成功！",
+              status: "success",
+              duration: 3000,
+            })
+          }
+          if (error) {
+            toast({
+              title: "密码更新失败",
+              description: error.message,
+              status: "error",
+              duration: 3000,
+            })
+          }
+        }
+      }
+    })
+  }, [toast])
+
+  const handleResetPassword = async (email: string) => {
+    setIsLoading(true)
+    try {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email)
+      if (error) throw error
+      
+      toast({
+        title: "重置密码邮件已发送",
+        description: "请检查您的邮箱",
+        status: "success",
+        duration: 5000,
+      })
+      setIsResetModalOpen(false)
+    } catch (error: any) {
+      toast({
+        title: "发送失败",
+        description: error.message,
+        status: "error",
+        duration: 3000,
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Section height="calc(100vh - 200px)" innerWidth="container.sm" position="relative" overflow="hidden">
@@ -100,6 +148,15 @@ const Login: NextPage = () => {
                 />
               </FormControl>
               <Button
+                variant="link"
+                size="sm"
+                onClick={() => router.push(`/reset-password/${encodeURIComponent(email)}`)}
+                color={isDark ? 'white' : 'black'}
+                alignSelf="flex-end"
+              >
+                忘记密码？
+              </Button>
+              <Button
                 isLoading={isLoading}
                 onClick={() => {
                   setIsLoading(true)
@@ -114,7 +171,7 @@ const Login: NextPage = () => {
                     if (error) throw error
                     setSuccess('登录成功！')
                     // 可以在这里添加重定向逻辑
-                    window.location.href = `/${data.user.id}`
+                    window.location.href = `/${data.user.id}/fortune`
                   })
                   .catch((error) => {
                     setError(error.message)
@@ -126,6 +183,41 @@ const Login: NextPage = () => {
               >
                 登录
               </Button>
+              
+
+
+              <Modal 
+                isOpen={isResetModalOpen} 
+                onClose={() => setIsResetModalOpen(false)}
+              >
+                <ModalOverlay />
+                <ModalContent>
+                  <ModalHeader>重置密码</ModalHeader>
+                  <ModalCloseButton />
+                  <ModalBody pb={6}>
+                    <FormControl>
+                      <FormLabel>邮箱地址</FormLabel>
+                      <Input 
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="请输入您的注册邮箱"
+                      />
+                    </FormControl>
+                  </ModalBody>
+
+                  <ModalFooter>
+                    <Button
+                      colorScheme="blue"
+                      mr={3}
+                      isLoading={isLoading}
+                      onClick={() => handleResetPassword(resetEmail)}
+                    >
+                      发送重置邮件
+                    </Button>
+                    <Button onClick={() => setIsResetModalOpen(false)}>取消</Button>
+                  </ModalFooter>
+                </ModalContent>
+              </Modal>
               
               <Text color="muted" fontSize="sm" textAlign="center">
                 还没有账号？{' '}

@@ -12,20 +12,20 @@ const UserReport = ({
     const router = useRouter()
     
     const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
           router.push('/login')
           return
         }
         
         // 验证 URL 中的 uuid 是否匹配当前登录用户
-        if (user.id !== params.uuid) {
+        if (session.user.id !== params.uuid) {
           router.push('/login')
           return
         }
         
-        setUser(user)
-        router.push(`/${user.id}/fortune`)
+        setUser(session.user)
+        // router.push(`/${user.id}/fortune`)
     }
       
     // 使用 useEffect 来处理副作用

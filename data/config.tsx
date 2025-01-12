@@ -21,6 +21,12 @@ const siteConfig = {
         id: 'home'
       },
       {
+        label: '我的资料',
+        href: '/my',
+        id: 'my',
+        requireAuth: true
+      },
+      {
         label: '基础信息',
         href: '/fortune',
         id: 'fortune'
@@ -75,23 +81,34 @@ const siteConfig = {
     features: [
       {
         icon: FiCheck,
-        title: '生辰八字',
-        description: '分析您的出生时间，揭示命运的基本结构。',
+        title: '精准分析',
+        description: '基于传统八字命理，科学解读您的命运轨迹，全面洞察您的优势与瓶颈。',
       },
       {
         icon: FiCheck,
-        title: '流年大运',
-        description: '根据每年的运势变化，为您提供详细的流年分析。',
+        title: '个性化定制',
+        description: '每一份命理分析都根据您的出生信息量身定制，独一无二，完全符合您的个体需求。',
       },
       {
         icon: FiCheck,
-        title: '合冲刑害',
-        description: '解析八字中的合冲刑害，帮助您理解人际关系和生活中的挑战。',
+        title: '专业团队',
+        description: '我们拥有经验丰富的命理师团队，深谙八字学与命理学，确保为您提供高质量的服务。',
+      },
+
+      {
+        icon: FiCheck,
+        title: '全方位解析',
+        description: '从事业到健康，从婚姻到财运，我们帮助您预测未来，规避风险。',
       },
       {
         icon: FiCheck,
-        title: '六亲十神',
-        description: '根据十神推测您的命运轨迹，揭示可能的机遇与风险。',
+        title: '简便易用',
+        description: '只需输入您的出生信息，便可快速获得专业排盘与分析报告，轻松了解自己的命运走向。',
+      },      
+      {
+        icon: FiCheck,
+        title: '尊重隐私',
+        description: '您的个人信息我们严格保密，安全无忧。',
       },
     ],
   },

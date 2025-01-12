@@ -4,7 +4,6 @@ import { Box, Center, Stack, Text, useColorMode, Button, Input, FormControl, For
 import { Link } from '@saas-ui/react'
 import { NextPage } from 'next'
 import NextLink from 'next/link'
-import * as Icons from 'react-icons/fa'
 import { Features } from '#components/features'
 import { BackgroundGradient } from '#components/gradients/background-gradient'
 import { PageTransition } from '#components/motion/page-transition'
@@ -12,26 +11,9 @@ import { Section } from '#components/section'
 import siteConfig from '#data/config'
 import { Logo } from '#data/logo'
 import { useState } from 'react'
-// import { supabase } from '@/components/supabase/supabase'
-import { supabaseClient } from '@/lib/supabase-client'
-const GoogleIcon = () => <Icons.FaGoogle />
-const GithubIcon = () => <Icons.FaGithub />
-
-const providers = {
-  // google: {
-  //   name: 'Google',
-  //   icon: GoogleIcon,
-  //   callbackUrl: `${window.location.origin}/auth/callback`
-  // },
-  // github: {
-  //   name: 'Github',
-  //   icon: GithubIcon,
-  //   variant: 'solid',
-  //   callbackUrl: `${window.location.origin}/auth/callback`
-  // },
-
-}
-
+import { supabase } from '@/components/supabase/supabase'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 const Signup: NextPage = () => {
   const { colorMode } = useColorMode()
   const isDark = colorMode === 'dark'
@@ -40,7 +22,16 @@ const Signup: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-
+  const router = useRouter()
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        router.push(`/${session.user.id}/fortune`)
+      }
+    }
+    checkSession()
+  }, [router])
   return (
     <Section height="100vh" innerWidth="container.xl">
       <BackgroundGradient
@@ -59,7 +50,7 @@ const Signup: NextPage = () => {
           spacing="20"
           flexDirection={{ base: 'column', lg: 'row' }}
         >
-          <Box pe="20">
+          <Box pe="20" flex="1">
             <NextLink href="/">
               <Logo width="160px" ms="4" mb={{ base: 0, lg: 16 }} />
             </NextLink>
@@ -78,7 +69,7 @@ const Signup: NextPage = () => {
               }))}
             />
           </Box>
-          <Center height="100%" flex="1">
+          <Center height="100vh" flex="1" position="sticky" top={0}>
             <Box 
               width="container.sm" 
               pt="8" 
@@ -134,11 +125,11 @@ const Signup: NextPage = () => {
                       setError('')
                       setSuccess('')
                       
-                      supabaseClient.auth.signUp({
+                      supabase.auth.signUp({
                         email,
                         password,
                         options: {
-                          emailRedirectTo: `${window.location.origin}/fortune`
+                          emailRedirectTo: `${window.location.origin}/`
                         }
                       })
                       .then(({ data, error }) => {

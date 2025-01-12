@@ -3,12 +3,30 @@
 import { Container, Heading, Button, VStack, Text } from '@chakra-ui/react'
 import { MotionBox } from '#components/motion/box'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { supabase } from '@/components/supabase/supabase'
 
 export default function Home() {
   const router = useRouter()
 
-  const handleClick = () => {
-    router.push('/fortune')
+
+  // useEffect(() => {
+  //   const checkSession = async () => {
+  //     const { data: { session } } = await supabase.auth.getSession()
+  //     if (session?.user) {
+  //       router.push(`/${session.user.id}/fortune`)
+  //     }
+  //   }
+  //   checkSession()
+  // }, [router])
+
+  const handleClick = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      router.push(`/${session.user.id}/fortune`)
+    }else{
+      router.push('/login')
+    }
   }
 
   return (
@@ -44,7 +62,7 @@ export default function Home() {
               maxW="md"
               px={4}
             >
-              基于八字命理的人生解析，为您提供事业、感情、财运等多维度分析。结果报告将以下一年的流月运势方式呈现。
+              基于八字命理的人生解析，为您提供事业、感情、财运等多维度分析。
             </Text>
           </VStack>
         </MotionBox>

@@ -124,7 +124,7 @@ export default function Report() {
       }
       useUserStore.setState({ analysisProgress: 0 })
     }
-  }, [userInfo.reportData, router, timeoutId, toast, supabase.auth])
+  }, [userInfo.reportData, router, timeoutId, toast])
 
   if (!userInfo.reportData) {
     return null
