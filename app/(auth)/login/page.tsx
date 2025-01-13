@@ -26,7 +26,8 @@ import {
 } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
+import { EmailIcon, LockIcon } from '@chakra-ui/icons'
+import { InputGroup, InputLeftElement } from '@chakra-ui/react'
 
 const Login: NextPage = () => {
   const { colorMode } = useColorMode()
@@ -133,19 +134,30 @@ const Login: NextPage = () => {
               )}
               <FormControl>
                 <FormLabel>Email</FormLabel>
-                <Input 
+                <InputGroup>
+                  <InputLeftElement>
+                    <EmailIcon color="gray.500" />
+                  </InputLeftElement>
+                  <Input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                />
+                  />
+                </InputGroup>
+
               </FormControl>
               <FormControl>
                 <FormLabel>Password</FormLabel>
-                <Input 
-                  type="password"
-                  value={password}
+                <InputGroup>
+                  <InputLeftElement>
+                    <LockIcon color="gray.500" />
+                  </InputLeftElement>
+                  <Input 
+                    type="password"
+                    value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                />
+                  />
+                </InputGroup>
               </FormControl>
               <Button
                 variant="link"

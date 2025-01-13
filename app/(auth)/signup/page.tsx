@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Center, Stack, Text, useColorMode, Button, Input, FormControl, FormLabel } from '@chakra-ui/react'
+import { Box, Center, Stack, Text, useColorMode, Button, Input, FormControl, FormLabel, InputLeftElement, InputGroup } from '@chakra-ui/react'
 import { Link } from '@saas-ui/react'
 import { NextPage } from 'next'
 import NextLink from 'next/link'
@@ -14,6 +14,8 @@ import { useState } from 'react'
 import { supabase } from '@/components/supabase/supabase'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { EmailIcon, LockIcon } from '@chakra-ui/icons'
+
 const Signup: NextPage = () => {
   const { colorMode } = useColorMode()
   const isDark = colorMode === 'dark'
@@ -23,6 +25,7 @@ const Signup: NextPage = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const router = useRouter()
+
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -32,6 +35,30 @@ const Signup: NextPage = () => {
     }
     checkSession()
   }, [router])
+
+  const handleSignup = async () => {
+    setIsLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const signupResult = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      })
+
+      if (signupResult.error) throw signupResult.error
+      setSuccess('注册成功！请查看邮箱完成验证。')
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <Section height="100vh" innerWidth="container.xl">
       <BackgroundGradient
@@ -92,22 +119,35 @@ const Signup: NextPage = () => {
                       {success}
                     </Text>
                   )}
+                  
                   <FormControl>
                     <FormLabel>Email</FormLabel>
-                    <Input 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
+                    <InputGroup>
+                      <InputLeftElement>
+                        <EmailIcon color="gray.500" />
+                      </InputLeftElement>
+                      <Input 
+                        type="email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </InputGroup>
                   </FormControl>
+
                   <FormControl>
                     <FormLabel>Password</FormLabel>
-                    <Input 
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
+                    <InputGroup>
+                      <InputLeftElement>
+                        <LockIcon color="gray.500" />
+                      </InputLeftElement>
+                      <Input 
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </InputGroup>
                   </FormControl>
+
                   <Text color="muted" fontSize="sm">
                     注册即表示您同意我们的{' '}
                     <Link href={siteConfig.termsUrl} color={isDark ? 'white' : 'black'}>
@@ -120,29 +160,7 @@ const Signup: NextPage = () => {
                   </Text>
                   <Button
                     isLoading={isLoading}
-                    onClick={() => {
-                      setIsLoading(true)
-                      setError('')
-                      setSuccess('')
-                      
-                      supabase.auth.signUp({
-                        email,
-                        password,
-                        options: {
-                          emailRedirectTo: `${window.location.origin}/`
-                        }
-                      })
-                      .then(({ data, error }) => {
-                        if (error) throw error
-                        setSuccess('注册成功！请查看邮箱完成验证。')
-                      })
-                      .catch((error) => {
-                        setError(error.message)
-                      })
-                      .finally(() => {
-                        setIsLoading(false)
-                      })
-                    }}
+                    onClick={handleSignup}
                   >
                     注册
                   </Button>

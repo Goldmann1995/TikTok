@@ -7,6 +7,7 @@ import { useUserStore } from '@/app/store/userStore'
 import { supabase } from '@/components/supabase/supabase'
 // 添加时辰定义
 const timeRanges = [
+  "不确定",
   "子时 (23:00-1:00)",
   "丑时 (1:00-3:00)",
   "寅时 (3:00-5:00)",
@@ -67,8 +68,9 @@ export default function FortuneForm() {
   }, [formData])
 
   const handleSubmit = async () => {
-    // 从时辰文本中提取小时的映射
+    // 修改时辰映射，添加"不确定"对应的默认时间（12点）
     const timeMap = {
+      "不确定": "12",
       "子时 (23:00-1:00)": "23",
       "丑时 (1:00-3:00)": "1",
       "寅时 (3:00-5:00)": "3",
@@ -253,6 +255,11 @@ export default function FortuneForm() {
                 </option>
               ))}
             </Select>
+            {formData.birthTime === "0" && (
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                虽然时辰不确定也能进行基础分析，但若能提供准确时辰，我们将为您呈现更全面、更精准的命理解读。系统将默认使用午时（12点）进行计算。
+              </Text>
+            )}
           </FormField>
 
           <Button
